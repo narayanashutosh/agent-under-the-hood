@@ -16,8 +16,8 @@ def get_product_price(product: str)->float:
     """
     Lookup the price of a product in the catalog.
     """
-    print(f"    >> Executing get_product_price(pdorduct='{product}')")
-    prices = {"Laptop": 1299.99, "headphones": 149.95, "keyboard": 89.50}
+    print(f"    >> Executing get_product_price(product='{product}')")
+    prices = {"laptop": 1299.99, "headphones": 149.95, "keyboard": 89.50}
     return prices.get(product, 0)
 
 @tool
@@ -63,7 +63,7 @@ def run_agent(question: str):
     for iteration in range(1, MAX_ITERATION + 1):
         print(f"\n--- Iteration {iteration} ---")
 
-        ai_message = llm.invoke(messages)
+        ai_message = llm_with_tools.invoke(messages)
         tool_calls = ai_message.tool_calls
 
         # If no tool calls this is the final answer
