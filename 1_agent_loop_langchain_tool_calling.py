@@ -3,11 +3,15 @@ from langchain.chat_models import init_chat_model
 from langchain.tools import tool
 from langchain.messages import SystemMessage, HumanMessage, ToolMessage
 from langsmith import traceable
+import os
 
 load_dotenv()
 
 MAX_ITERATION = 10
 MODEL = "qwen3:1.7b"
+AZURE_LLM_MODEL = ""
+
+
 
 # ------------- Tools (Langchain @tools decorator) -------------
 
@@ -34,15 +38,28 @@ def apply_discount(price: float, discount_tier:str)->float:
 # ------------- Agent Loop -------------
 
 @traceable(name="Langchain Agent Loop")
-def run_agent(question: str):
+def run_agent(question: str, llm_type: str = "AZURE_OPENAI"):
+    model_name = f"ollama:{MODEL}"
+    llm_kwargs = {}
+
+    if llm_type=="AZURE_OPENAI":
+        model_name = f"azure_openai:{os.environ.get('OPENAI_MODEL')}"
+        llm_kwargs = {
+                            "azure_endpoint": os.environ.get("OPENAI_API_ENDPOINT"),
+                            "api_version": os.environ.get("OPENAI_API_VERSION"),
+                            "azure_deployment": os.environ.get("OPENAI_DEPLOYMENT"),
+                            "api_key": os.environ.get("OPENAI_API_KEY"),
+                        }
+
     tools = [get_product_price, apply_discount]
     tools_dict = {t.name: t for t in tools}
 
-    llm = init_chat_model(f"ollama:{MODEL}", temperature=0)
+    llm = init_chat_model(model_name, temperature=0, **llm_kwargs)
     llm_with_tools = llm.bind_tools(tools)
-
-    print(f"Question: {question}")
+    print(f"LLM provider: {llm_type}")
     print("=" * 60)
+    print(f"Question: {question}")
+    print()
     
     messages = [
         SystemMessage(
@@ -95,5 +112,9 @@ def run_agent(question: str):
 
 if __name__ == "__main__":
     print("Hello LangChain Agent (.bind_tools)!")
+    
+    question = "What is the price of a laptop after applying a gold discount?"
     print()
-    result = run_agent("What is the price of a laptop after applying a gold discount?")
+    result = run_agent(question, "AZURE_OPENAI")
+    print()
+    result = run_agent(question, "OLLAMA")
